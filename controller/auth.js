@@ -1,5 +1,5 @@
 const User = require("../models/user");
-const Errror = require("../utils/error")
+const createError = require("../utils/error")
 var jwt = require('jsonwebtoken');
 var CryptoJS = require("crypto-js");
 require('dotenv').config();
@@ -34,31 +34,42 @@ const authSign = async (req, res, next) => {
 }
 const authLogin = async (req, res, next) => {
 
-    try {
+    try{
+        const user = await User.findOne(
+            {
+                username: req.body.username
+            }
+        );
 
-        const user = await User.findOne({ username: req.body.username });
-        if (!user) return next(Error(404, "user not found"));
+        !user && res.status(401).json("Wrong User Name");
+
+        const hashedPassword = CryptoJS.AES.decrypt(
+            user.password,
+            process.env.pass_sec
+        );
 
 
-        const isPasswordCorrect = CryptoJS.AES.decrypt(user.password, process.env.pass_sec)
-        const originalText = isPasswordCorrect.toString(CryptoJS.enc.Utf8);
+        const originalPassword = hashedPassword.toString(CryptoJS.enc.Utf8);
 
-        if (originalText === req.body.Password) return next();
-        else {
-            next(Error(400, "wrong password or username"));
-        }
+        const inputPassword = req.body.password;
+        
+        originalPassword != inputPassword && 
+            res.status(401).json("Wrong Password");
 
+            const token = jwt.sign({
+                id: user._id,
+                isAdmin: user.isAdmin
+            },process.env.JWT,{ expiresIn: '3d' } );
 
+            
+            
+        const { password, ...others } = user._doc; 
+        res.cookie('access_token', token, { httpOnly: true }); 
+        res.status(200).json({...others});
 
-        const token = jwt.sign(
-            { id: user._id, isAdmin: user.isAdmin },
-            process.env.JWT);
-
-        const { password, isAdmin, ...otherdDetails } = user._doc;
-        res.cookie("access_token",
-            token, { httpOnly: true, }).status(200).send({ ...otherdDetails });
-    } catch (err) {
-        next(err)
+    }catch(err){
+        res.status(500).json(err);
     }
-}
+
+};
 module.exports = { authSign, authLogin };
