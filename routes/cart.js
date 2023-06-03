@@ -4,6 +4,7 @@ const router = express.Router();
 // const {createCart}= require("../controller/cart")
 
 // router.post("/addToCart", verifyUser, createCart)
+// //update
 // router.put("/:id", verifyUser,updateCart)
 // //delete
 // router.delete("/:id", verifyUser,deleteCart)

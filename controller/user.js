@@ -1,5 +1,4 @@
 const User = require("../models/user");
-const router = require("express").Router(); 
 
 
 const updateUser =async (req, res)=>{
